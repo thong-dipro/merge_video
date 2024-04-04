@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
@@ -53,9 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {
           _isLoadvideo = true;
         });
-      }).catchError((err) {
-        print("videoplayer error $err");
-      });
+      }).catchError((_) {});
   }
 
   Future<void> _onCombineVideo() async {
@@ -75,17 +74,12 @@ class _MyHomePageState extends State<MyHomePage> {
       if (ReturnCode.isSuccess(returnCode)) {
         // SUCCESS
         _loadVideo(result.filePath);
-        print("success");
+        log("success");
       } else if (ReturnCode.isCancel(returnCode)) {
-        print("cancel");
+        log("cancel");
         // CANCEL
       } else {
-        session.getAllLogs().then((logs) {
-          for (var element in logs) {
-            print("errorffmpeg ${element.getMessage()}");
-          }
-        });
-        print("error data ${session.getAllLogs()}");
+        log("error data ${session.getAllLogs()}");
         // ERROR
       }
       setState(() {
@@ -174,18 +168,20 @@ class _MyHomePageState extends State<MyHomePage> {
           )
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            _controller.value.isPlaying
-                ? _controller.pause()
-                : _controller.play();
-          });
-        },
-        child: const Icon(
-          Icons.merge,
-        ),
-      ),
+      floatingActionButton: _isLoadvideo
+          ? FloatingActionButton(
+              onPressed: () {
+                setState(() {
+                  _controller.value.isPlaying
+                      ? _controller.pause()
+                      : _controller.play();
+                });
+              },
+              child: Icon(
+                _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+              ),
+            )
+          : null,
     );
   }
 }

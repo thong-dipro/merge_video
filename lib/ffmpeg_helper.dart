@@ -11,7 +11,7 @@ abstract class FFMpegHelper {
         '$rawDocumentPath/output3${DateTime.now().millisecondsSinceEpoch}.mp4';
     return FFMpegResponse(
       query:
-          '-i $firstVideo -i $secondVideo -filter_complex "[0:v] [0:a] [1:v] [1:a] concat=n=2:v=1:a=1 [v] [a]" -map "[v]" -map "[a]" $outputPath',
+          '''-t 28 -i $firstVideo -ss 2.0 -i $secondVideo -filter_complex "[0:v] [0:a] [1:v] [1:a] concat=n=2:v=1:a=1 [v] [a]" -map "[v]" -map "[a]" $outputPath''',
       filePath: outputPath,
     );
   }
