@@ -5,8 +5,11 @@ import 'package:ffmpeg_kit_flutter/ffmpeg_kit.dart';
 import 'package:ffmpeg_kit_flutter/return_code.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:merge_video/app_const.dart';
 import 'package:merge_video/ffmpeg_helper.dart';
 import 'package:merge_video/loading_status.dart';
+import 'package:merge_video/video_extracting.dart';
+import 'package:merge_video/view_image.dart';
 import 'package:video_player/video_player.dart';
 
 Future<void> main() async {
@@ -66,7 +69,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _isLoadvideo = false;
       _loadingStatus = LoadingStatus.loading;
     });
-    print("query ${result.query}");
     FFmpegKit.execute(
       result.query,
     ).then((session) async {
@@ -88,11 +90,85 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  Future<void> _getFirstFrame() async {
+    FFMpegResponse result = await FFMpegHelper.getFirstFrame(
+      video: _videos.first,
+    );
+    FFmpegKit.execute(
+      result.query,
+    ).then((session) async {
+      final returnCode = await session.getReturnCode();
+      if (ReturnCode.isSuccess(returnCode)) {
+        // SUCCESS
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ViewImage(
+              imageUrl: result.filePath,
+            ),
+          ),
+        );
+      } else if (ReturnCode.isCancel(returnCode)) {
+        log("cancel");
+        // CANCEL
+      } else {
+        log("error data ${session.getAllLogs()}");
+        // ERROR
+      }
+      setState(() {
+        _loadingStatus = LoadingStatus.loaded;
+      });
+    });
+  }
+
+  Future<void> _extractFrame() async {
+    FFMpegResponse result = await FFMpegHelper.extractVideoToFrames(
+      video: _videos.first,
+    );
+    FFmpegKit.execute(
+      result.query,
+    ).then((session) async {
+      final returnCode = await session.getReturnCode();
+      if (ReturnCode.isSuccess(returnCode)) {
+        // SUCCESS
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ViewImage(
+              imageUrl: '${result.filePath}frame_001.png',
+            ),
+          ),
+        );
+      } else if (ReturnCode.isCancel(returnCode)) {
+        log("cancel");
+        // CANCEL
+      } else {
+        log("error data ${session.getAllLogs()}");
+        // ERROR
+      }
+      setState(() {
+        _loadingStatus = LoadingStatus.loaded;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Video Player"),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const VideoExtracting(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.image),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -140,11 +216,22 @@ class _MyHomePageState extends State<MyHomePage> {
               itemCount: _videos.length,
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              _onCombineVideo();
-            },
-            child: const Text("Combine Videos"),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  _onCombineVideo();
+                },
+                child: const Text("Combine Videos"),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  _extractFrame();
+                },
+                child: const Text("First Frame"),
+              ),
+            ],
           ),
           const SizedBox(
             height: 20,
@@ -162,6 +249,35 @@ class _MyHomePageState extends State<MyHomePage> {
                           : const Text("No Video Loaded"),
                     ),
             ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _controller.seekTo(
+                      _controller.value.position - AppConstants.timeDuration,
+                    );
+                  });
+                },
+                icon: const Icon(
+                  Icons.replay_10,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _controller.seekTo(
+                      _controller.value.position + AppConstants.timeDuration,
+                    );
+                  });
+                },
+                icon: const Icon(
+                  Icons.forward_10,
+                ),
+              )
+            ],
           ),
           const SizedBox(
             height: 50,
